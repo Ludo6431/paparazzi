@@ -13,10 +13,13 @@
       <define name="USE_SPI_SLAVE0"/>
     </target>
 
-    <subsystem name="spi"/>
-    <!--subsystem name="i2c">
-      <define name="USE_I2C0"/>
-    </subsystem-->
+    <!--if use arduimu ins-->
+<!--    <subsystem name="i2c">-->
+<!--      <define name="USE_I2C0"/>-->
+<!--    </subsystem>-->
+
+    <!--if use vectornav100 ins-->
+    <subsystem name="spi" />
 
     <subsystem  name="telemetry" type="transparent">
       <configure name="MODEM_BAUD" value="B9600" />
@@ -24,7 +27,10 @@
 
     <subsystem name="radio_control" type="ppm"/>
     <subsystem name="navigation" />
+
+    <!--if not use ins-->
 <!--    <subsystem name="attitude" type="infrared"/>-->
+
     <subsystem name="control"/>
     <subsystem name="gps" type="ublox_lea5h"/>
   </firmware>
@@ -35,7 +41,11 @@
   </firmware>
 
   <modules>
-    <load name="ins_vn100.xml" />
+    <!--if use arduimu ins-->
+<!--    <load name="ins_arduimu.xml" />-->
+
+    <!--if use vectornav100 ins-->
+    <load name="ins_vn100.xml"/>
   </modules>
 
 <!-- commands section -->
@@ -56,14 +66,14 @@
     <axis name="ROLL"     failsafe_value="0"/>
     <axis name="PITCH"    failsafe_value="0"/>
     <axis name="YAW"      failsafe_value="0"/>
-    <axis name="HATCH"      failsafe_value="0"/>
+    <axis name="HATCH"    failsafe_value="0"/>
   </commands>
 
   <rc_commands>
     <set command="THROTTLE" value="@THROTTLE"/>
     <set command="ROLL"     value="@ROLL"/>
     <set command="PITCH"    value="@PITCH"/>
-    <set command="YAW"    value="@YAW"/>
+    <set command="YAW"      value="@YAW"/>
   </rc_commands>
 
   <section name="MIXER">
@@ -72,9 +82,9 @@
   </section>
 
   <command_laws>
-    <set servo="THROTTLE"           value="@THROTTLE"/>
-    <set servo="ELEVATOR" value="@PITCH"/>
-    <set servo="RUDDER" value="@YAW + @ROLL*COMBI_SWITCH"/>
+    <set servo="THROTTLE"   value="@THROTTLE"/>
+    <set servo="ELEVATOR"   value="@PITCH"/>
+    <set servo="RUDDER"     value="@YAW + @ROLL*COMBI_SWITCH"/>
 
     <let var="roll" value="@ROLL"/>
     <set servo="AILERON_LEFT" value="($roll > 0 ? 1 : AILERON_DIFF) * $roll"/>
