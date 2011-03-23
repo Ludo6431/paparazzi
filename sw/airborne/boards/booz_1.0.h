@@ -61,24 +61,42 @@
 #define ANALOG_BARO_ADC 1
 
 
+/* battery */
+#define ADC_CHANNEL_VSUPPLY AdcBank0(2)
+#ifndef USE_AD0
+#define USE_AD0
+#endif
+#define USE_AD0_2
 
-/* MS2001 on SSP, IMU connector */
-#define MS2001_SS_PIN   28
-#define MS2001_SS_IODIR IO1DIR
-#define MS2001_SS_IOSET IO1SET
-#define MS2001_SS_IOCLR IO1CLR
+#define DefaultVoltageOfAdc(adc) (0.0183*adc)
 
-#define MS2001_RESET_PIN   19
-#define MS2001_RESET_IODIR IO1DIR
-#define MS2001_RESET_IOSET IO1SET
-#define MS2001_RESET_IOCLR IO1CLR
 
-#define MS2001_DRDY_PIN  30
-#define MS2001_DRDY_PINSEL PINSEL1
-#define MS2001_DRDY_PINSEL_BIT 28
-#define MS2001_DRDY_PINSEL_VAL 2
-#define MS2001_DRDY_EINT 3
-#define MS2001_DRDY_VIC_IT VIC_EINT3
+/* baro */
+#define ADC_CHANNEL_BARO AdcBank1(2)
+#ifndef USE_AD1
+#define USE_AD1
+#endif
+#define USE_AD1_2
+
+
+
+/* MS2100 on SSP, IMU connector */
+#define MS2100_SS_PIN   28
+#define MS2100_SS_IODIR IO1DIR
+#define MS2100_SS_IOSET IO1SET
+#define MS2100_SS_IOCLR IO1CLR
+
+#define MS2100_RESET_PIN   19
+#define MS2100_RESET_IODIR IO1DIR
+#define MS2100_RESET_IOSET IO1SET
+#define MS2100_RESET_IOCLR IO1CLR
+
+#define MS2100_DRDY_PIN  30
+#define MS2100_DRDY_PINSEL PINSEL1
+#define MS2100_DRDY_PINSEL_BIT 28
+#define MS2100_DRDY_PINSEL_VAL 2
+#define MS2100_DRDY_EINT 3
+#define MS2100_DRDY_VIC_IT VIC_EINT3
 
 /* PWM5 on CAM connector */
 /* P0.21 */
