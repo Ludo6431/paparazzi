@@ -1,15 +1,13 @@
-#CFLAGS=$(shell pkg-config --cflags glib-2.0 --libs)  `pcre-config --libs` -lglibivy
-#LDFLAGS=$(shell pkg-config --cflags glib-2.0 gammu ivy-glib --libs)
+.PHONY:all clean
 
-#ALL=moduleGSM 
+all: moduleGSM
 
-#.PHONY: all clean
+clean:
+	rm moduleGSM
 
-#all: $(ALL)
+CFLAGS=`pkg-config --cflags ivy-glib gammu`
+LDFLAGS=`pkg-config --libs ivy-glib gammu`
 
-#clean: rm -f $(ALL)
+%:%.c
+	gcc -g -O2 -Wall $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-#%:%.c $(CC) $< $(CFLAGS) $(LDFLAGS) -o $@
-
-moduleGSM: moduleGSM.c
-	gcc -g -O2 -Wall `pkg-config glib-2.0 gammu --cflags` -o $@ $^ `pkg-config glib-2.0 gammu --libs`  `pcre-config --libs` -lglibivy
