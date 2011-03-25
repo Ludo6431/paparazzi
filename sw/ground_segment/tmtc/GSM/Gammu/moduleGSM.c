@@ -11,17 +11,13 @@
 #include <Ivy/ivyglibloop.h>
 #include <gammu.h>
 
-
 GMainLoop *ml;
-GSM_StateMachine *s;
 GSM_Error error;
 char buffer[100];
-volatile GSM_Error sms_send_status;
 volatile gboolean gshutdown = FALSE;
 
 /* Function to handle errors */
-void error_handler(void)
-{
+void error_handler(GSM_StateMachine *s) {
 	if (error != ERR_NONE) {
 		printf("ERREUR: %s\n", GSM_ErrorString(error));
 		if (GSM_IsConnected(s))
@@ -30,91 +26,95 @@ void error_handler(void)
 	}
 }
 
-int setup()
-{
+GSM_StateMachine *setup() {
 	GSM_Config *cfg;
+	GSM_StateMachine *s;
 
 	/*
-	 *  * We don't need gettext, but need to set locales so that
-	 *   * charset conversion works.
-	 *    */
+	 * We don't need gettext, but need to set locales so that
+	 * charset conversion works.
+	 */
 	GSM_InitLocales(NULL);
 
 	/* Allocates state machine */
 	s = GSM_AllocStateMachine();
-	if (s == NULL)
-		return 3;
-	
+	if(s == NULL)
+		return NULL;
+
 	/*
-	 *  * Get pointer to config structure.
-	 *   */
+	 * Get pointer to config structure.
+	 */
 	cfg = GSM_GetConfig(s, 0);
-	
+
 	/*
- 	*  * Set configuration, first freeing old values.
- 	*   */
+ 	 * Set configuration, first freeing old values.
+ 	 */
 	free(cfg->Device);
 	cfg->Device = DEVICE;
 	free(cfg->Connection);
 	cfg->Connection = CONNECTION;
 	/* For historical reasons this is not a pointer */
 	strcpy(cfg->Model,MODEL);
-	
+
 	/* We have one valid configuration */
 	GSM_SetConfigNum(s, 1);
-	
-	return 0;
+
+	return s;
 }
 
-int connection(){
+int connection(GSM_StateMachine *s) {
 	/* Connect to phone */
 	/* 1 means number of replies you want to wait for */
 	error = GSM_InitConnection(s,1);
-	error_handler();
+	error_handler(s);
+
 	return 0;
 }
 
-int close_connection(){
+int close_connection(GSM_StateMachine *s) {
 	/* Terminate connection */
 	error = GSM_TerminateConnection(s);
-	error_handler();
+	error_handler(s);
+
 	/* Free up used memory */
 	//GSM_FreeStateMachine(s); Actuellement pose problème
 	printf("Attention la place mémoire de la StateMachine n'est pas libéré\n");
+
 	return 0;
 }
 
 
 /* Handler for SMS send reply */
-void send_sms_callback (GSM_StateMachine *sm, int status, int MessageReference, void * user_data)
-{
+void send_sms_callback(GSM_StateMachine *sm, int status, int MessageReference, void * user_data) {
+	GSM_Error *sms_send_status = user_data;
+
 	printf("Sent SMS on device: \"%s\"\n", GSM_GetConfig(sm, -1)->Device);
 	if (status==0) {
 		printf("..OK");
-		sms_send_status = ERR_NONE;
+		*sms_send_status = ERR_NONE;
 	} else {
 		printf("..error %i", status);
-		sms_send_status = ERR_UNKNOWN;
+		*sms_send_status = ERR_UNKNOWN;
 	}
 	printf(", message reference=%d\n", MessageReference);
 }
 
-int envoyer_sms(char* message_text, char* numero)
-{
-	// On essie de reconnecter le téléphone
+int envoyer_sms(GSM_StateMachine *s, char* message_text, char* numero) {
+	// On essaie de reconnecter le téléphone
 	if (!GSM_IsConnected(s)){
-		connection();
+		connection(s);
 	}
 
 	GSM_SMSMessage sms;
 	GSM_SMSC PhoneSMSC;
 	char* recipient_number = numero;
 	int return_value = 0;
+	volatile GSM_Error sms_send_status;
 
 	/*
-	 *  * we don't need gettext, but need to set locales so that
-	 *   * charset conversion works.
-	 *    */
+	 * we don't need gettext, but need to set locales so that
+	 * charset conversion works.
+	 */
 	GSM_InitLocales(NULL);
 
 	/* prepare message */
@@ -135,25 +135,25 @@ int envoyer_sms(char* message_text, char* numero)
 
 	/* set callback for message sending */
 	/* this needs to be done after initiating connection */
-	GSM_SetSendSMSStatusCallback(s, send_sms_callback, NULL);
+	GSM_SetSendSMSStatusCallback(s, send_sms_callback, (void *)&sms_send_status);
 
 	/* we need to know smsc number */
 	PhoneSMSC.Location = 1;
 	error = GSM_GetSMSC(s, &PhoneSMSC);
-	error_handler();
+	error_handler(s);
 
 	/* set smsc number in message */
 	CopyUnicodeString(sms.SMSC.Number, PhoneSMSC.Number);
 
 	/*
-	 *  * set flag before callind sendsms, some phones might give
-	 *   * instant response
-	 *    */
+	 * set flag before callind sendsms, some phones might give
+	 * instant response
+	 */
 	sms_send_status = ERR_TIMEOUT;
 
 	/* send message */
 	error = GSM_SendSMS(s, &sms);
-	error_handler();
+	error_handler(s);
 
 	/* wait for network reply */
 	while (!gshutdown) {
@@ -173,10 +173,9 @@ int envoyer_sms(char* message_text, char* numero)
 	return return_value;
 }
 
-gboolean reception()
-{	
+gboolean reception(GSM_StateMachine *s) {
 	if (!GSM_IsConnected(s)){
-		connection();
+		connection(s);
 	}
 	gboolean start;
 	GSM_MultiSMSMessage sms;
@@ -191,7 +190,7 @@ gboolean reception()
 	while (error == ERR_NONE && !gshutdown) {
 		error = GSM_GetNextSMS(s, &sms, start);
 		if (error == ERR_EMPTY) break;
-		error_handler();
+		error_handler(s);
 		start = FALSE;
 
 		/* now we can do something with the message */
@@ -205,18 +204,19 @@ gboolean reception()
 	return TRUE;
 }
 
+int main() {
+	GSM_StateMachine *s = setup();
+	if(!s) return EXIT_FAILURE;
 
+	if(connection(s))
+		return EXIT_FAILURE;
 
-int main()
-{
-	if(setup()==0){
-		if(connection()==0){
-			ml =  g_main_loop_new(NULL, FALSE);
-			IvyInit ("IvyReceptionGSM", "IvyReceptionGSM READY", NULL, NULL, NULL, NULL);
-			IvyStart("127.255.255.255");
-			g_timeout_add(TIMEOUT_PERIOD, reception, NULL);
-      			g_main_loop_run(ml);
-		}
-	}
-	return 0;
+	ml =  g_main_loop_new(NULL, FALSE);
+	IvyInit ("IvyReceptionGSM", "IvyReceptionGSM READY", NULL, NULL, NULL, NULL);
+	IvyStart("127.255.255.255");
+	g_timeout_add(TIMEOUT_PERIOD, (GSourceFunc)reception, s);
+	g_main_loop_run(ml);
+
+	return EXIT_SUCCESS;
 }
+
