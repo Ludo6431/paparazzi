@@ -12,9 +12,10 @@
 
 GSM_Error error;
 volatile gboolean gshutdown = FALSE;
+GSM_StateMachine *s = NULL;
 
 /* Function to handle errors */
-void error_handler(GSM_StateMachine *s) {
+void error_handler() {
 	if (error != ERR_NONE) {
 		printf("ERREUR: %s\n", GSM_ErrorString(error));
 		if (GSM_IsConnected(s))
@@ -23,9 +24,8 @@ void error_handler(GSM_StateMachine *s) {
 	}
 }
 
-GSM_StateMachine *gsm_setup() {
+int gsm_setup() {
 	GSM_Config *cfg;
-	GSM_StateMachine *s;
 
 	/*
 	 * We don't need gettext, but need to set locales so that
@@ -36,7 +36,7 @@ GSM_StateMachine *gsm_setup() {
 	/* Allocates state machine */
 	s = GSM_AllocStateMachine();
 	if(s == NULL)
-		return NULL;
+		return 1;
 
 	/*
 	 * Get pointer to config structure.
@@ -56,10 +56,10 @@ GSM_StateMachine *gsm_setup() {
 	/* We have one valid configuration */
 	GSM_SetConfigNum(s, 1);
 
-	return s;
+	return 0;
 }
 
-int gsm_connect(GSM_StateMachine *s) {
+int gsm_connect() {
 	/* Connect to phone */
 	/* 1 means number of replies you want to wait for */
 	error = GSM_InitConnection(s,1);
@@ -68,7 +68,7 @@ int gsm_connect(GSM_StateMachine *s) {
 	return 0;
 }
 
-int gsm_close_connection(GSM_StateMachine *s) {
+int gsm_close_connection() {
 	/* Terminate connection */
 	error = GSM_TerminateConnection(s);
 	error_handler(s);
@@ -95,7 +95,7 @@ void send_sms_callback(GSM_StateMachine *sm, int status, int MessageReference, v
 	printf(", message reference=%d\n", MessageReference);
 }
 
-int gsm_send(GSM_StateMachine *s, char* message_text, char* numero) {
+int gsm_send(char* numero, char* message_text) {
 	// On essaie de reconnecter le téléphone
 	if (!GSM_IsConnected(s))
 		gsm_connect(s);
@@ -168,7 +168,7 @@ int gsm_send(GSM_StateMachine *s, char* message_text, char* numero) {
 	return return_value;
 }
 
-gboolean gsm_receive(GSM_StateMachine *s) {
+gboolean gsm_receive(/* TODO callback */) {
 	if (!GSM_IsConnected(s))
 		gsm_connect(s);
 
@@ -191,8 +191,9 @@ gboolean gsm_receive(GSM_StateMachine *s) {
 		/* now we can do something with the message */
 		for (i = 0; i < sms.Number; i++) {
 			GSM_DateTime date = sms.SMS[i].DateTime;
+			// TODO call callback
 			IvySendMsg("%d:%d:%d %s",date.Hour,date.Minute,date.Second,DecodeUnicodeConsole(sms.SMS[i].Text));
-			GSM_DeleteSMS(s, &(sms.SMS[i]));
+			GSM_DeleteSMS(s, &sms.SMS[i]);
 		}
 	}
 
