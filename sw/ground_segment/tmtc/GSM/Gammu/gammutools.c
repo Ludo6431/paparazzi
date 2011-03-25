@@ -23,7 +23,7 @@ void error_handler(GSM_StateMachine *s) {
 	}
 }
 
-GSM_StateMachine *setup() {
+GSM_StateMachine *gsm_setup() {
 	GSM_Config *cfg;
 	GSM_StateMachine *s;
 
@@ -59,7 +59,7 @@ GSM_StateMachine *setup() {
 	return s;
 }
 
-int connection(GSM_StateMachine *s) {
+int gsm_connect(GSM_StateMachine *s) {
 	/* Connect to phone */
 	/* 1 means number of replies you want to wait for */
 	error = GSM_InitConnection(s,1);
@@ -68,7 +68,7 @@ int connection(GSM_StateMachine *s) {
 	return 0;
 }
 
-int close_connection(GSM_StateMachine *s) {
+int gsm_close_connection(GSM_StateMachine *s) {
 	/* Terminate connection */
 	error = GSM_TerminateConnection(s);
 	error_handler(s);
@@ -95,10 +95,10 @@ void send_sms_callback(GSM_StateMachine *sm, int status, int MessageReference, v
 	printf(", message reference=%d\n", MessageReference);
 }
 
-int envoyer_sms(GSM_StateMachine *s, char* message_text, char* numero) {
+int gsm_send(GSM_StateMachine *s, char* message_text, char* numero) {
 	// On essaie de reconnecter le téléphone
 	if (!GSM_IsConnected(s))
-		connection(s);
+		gsm_connect(s);
 
 	GSM_SMSMessage sms;
 	GSM_SMSC PhoneSMSC;
@@ -168,9 +168,9 @@ int envoyer_sms(GSM_StateMachine *s, char* message_text, char* numero) {
 	return return_value;
 }
 
-gboolean reception(GSM_StateMachine *s) {
+gboolean gsm_receive(GSM_StateMachine *s) {
 	if (!GSM_IsConnected(s))
-		connection(s);
+		gsm_connect(s);
 
 	gboolean start;
 	GSM_MultiSMSMessage sms;
