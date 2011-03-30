@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <Ivy/ivy.h>
 #include <gammu.h>
 
 #include "gammutools.h"
@@ -11,14 +10,13 @@
 #define MODEL ""
 
 GSM_Error error;
-volatile gboolean gshutdown = FALSE;
 GSM_StateMachine *s = NULL;
 
 /* Function to handle errors */
 void error_handler() {
-	if (error != ERR_NONE) {
-		printf("ERREUR: %s\n", GSM_ErrorString(error));
-		if (GSM_IsConnected(s))
+	if(error != ERR_NONE) {
+		printf("ERR: %s\n", GSM_ErrorString(error));
+		if(GSM_IsConnected(s))
 			GSM_TerminateConnection(s);
 		exit(error);
 	}
@@ -35,7 +33,7 @@ int gsm_setup() {
 
 	/* Allocates state machine */
 	s = GSM_AllocStateMachine();
-	if(s == NULL)
+	if(!s)
 		return 1;
 
 	/*
@@ -81,29 +79,28 @@ int gsm_close_connection() {
 }
 
 /* Handler for SMS send reply */
-void send_sms_callback(GSM_StateMachine *sm, int status, int MessageReference, void * user_data) {
+void send_sms_callback(GSM_StateMachine *sm, int status, int MessageReference, void *user_data) {
 	GSM_Error *sms_send_status = user_data;
 
 	printf("Sent SMS on device: \"%s\"\n", GSM_GetConfig(sm, -1)->Device);
-	if (status==0) {
+	if(!status) {
 		printf("..OK");
 		*sms_send_status = ERR_NONE;
-	} else {
+	}
+	else {
 		printf("..error %i", status);
 		*sms_send_status = ERR_UNKNOWN;
 	}
 	printf(", message reference=%d\n", MessageReference);
 }
 
-int gsm_send(char* numero, char* message_text) {
+int gsm_send(char* recipient_number, char* message_text) {
 	// On essaie de reconnecter le téléphone
-	if (!GSM_IsConnected(s))
+	if(!GSM_IsConnected(s))
 		gsm_connect(s);
 
 	GSM_SMSMessage sms;
 	GSM_SMSC PhoneSMSC;
-	char* recipient_number = numero;
-	int return_value = 0;
 	volatile GSM_Error sms_send_status;
 
 	/*
@@ -151,24 +148,13 @@ int gsm_send(char* numero, char* message_text) {
 	error_handler(s);
 
 	/* wait for network reply */
-	while (!gshutdown) {
+	while(sms_send_status == ERR_TIMEOUT)
 		GSM_ReadDevice(s, TRUE);
-		if (sms_send_status == ERR_NONE) {
-			/* message sent ok */
-			return_value = 0;
-			break;
-		}
-		if (sms_send_status != ERR_TIMEOUT) {
-		/* message sending failed */
-		return_value = 100;
-		break;
-		}
-	}
 
-	return return_value;
+	return sms_send_status==ERR_NONE?0:1;
 }
 
-gboolean gsm_receive(/* TODO callback */) {
+gboolean gsm_receive(SMSRXCallBack rxcb) {
 	if (!GSM_IsConnected(s))
 		gsm_connect(s);
 
@@ -182,17 +168,27 @@ gboolean gsm_receive(/* TODO callback */) {
 	sms.Number = 0;
 	sms.SMS[0].Location = 0;
 	sms.SMS[0].Folder = 0;
-	while (error == ERR_NONE && !gshutdown) {
+	while(error == ERR_NONE) {
 		error = GSM_GetNextSMS(s, &sms, start);
 		if (error == ERR_EMPTY) break;
 		error_handler(s);
 		start = FALSE;
 
 		/* now we can do something with the message */
-		for (i = 0; i < sms.Number; i++) {
-			GSM_DateTime date = sms.SMS[i].DateTime;
-			// TODO call callback
-			IvySendMsg("%d:%d:%d %s",date.Hour,date.Minute,date.Second,DecodeUnicodeConsole(sms.SMS[i].Text));
+		for(i = 0; i < sms.Number; i++) {
+			if(rxcb) {
+				GSM_DateTime date = sms.SMS[i].DateTime;
+				struct tm ts;
+				ts.tm_year = date.Year - 1900;
+				ts.tm_mon = date.Month - 1;
+				ts.tm_mday = date.Day;
+				ts.tm_hour = date.Hour;
+				ts.tm_min = date.Minute;
+				ts.tm_sec = date.Second;
+
+				rxcb(DecodeUnicodeConsole(sms.SMS[i].Number), timegm(&ts)-date.Timezone, DecodeUnicodeConsole(sms.SMS[i].Text));
+			}
+
 			GSM_DeleteSMS(s, &sms.SMS[i]);
 		}
 	}
