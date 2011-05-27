@@ -39,7 +39,7 @@ else
 endif
 
 
-sim.srcs = $(NPSDIR)/nps_main.c                      \
+sim.srcs += $(NPSDIR)/nps_main.c                      \
        $(NPSDIR)/nps_fdm_jsbsim.c                \
        $(NPSDIR)/nps_random.c                    \
        $(NPSDIR)/nps_sensors.c                   \
@@ -55,11 +55,6 @@ sim.srcs = $(NPSDIR)/nps_main.c                      \
        $(NPSDIR)/nps_autopilot_booz.c            \
        $(NPSDIR)/nps_ivy.c                       \
        $(NPSDIR)/nps_flightgear.c                \
-
-
-sim.srcs += math/pprz_trig_int.c             \
-            math/pprz_geodetic_float.c       \
-            math/pprz_geodetic_double.c      \
 
 
 
@@ -82,7 +77,7 @@ sim.srcs += $(SRC_FIRMWARE)/telemetry.c \
             downlink.c \
             $(SRC_ARCH)/ivy_transport.c
 
-sim.srcs   += $(SRC_BOOZ)/booz2_commands.c
+sim.srcs   += $(SRC_FIRMWARE)/commands.c
 
 sim.srcs += $(SRC_FIRMWARE)/datalink.c
 
@@ -152,7 +147,6 @@ endif
 sim.CFLAGS += -DUSE_NAVIGATION
 sim.srcs += $(SRC_FIRMWARE)/guidance/guidance_h.c
 sim.srcs += $(SRC_FIRMWARE)/guidance/guidance_v.c
-sim.srcs += math/pprz_geodetic_int.c
 sim.srcs += $(SRC_SUBSYSTEMS)/ins.c
 
 #  vertical filter float version
@@ -169,3 +163,4 @@ sim.CFLAGS += -DUSE_VFF -DDT_VFILTER='(1./512.)'
 
 
 sim.srcs += $(SRC_FIRMWARE)/navigation.c
+sim.srcs += $(SRC_SUBSYSTEMS)/navigation/common_flight_plan.c
