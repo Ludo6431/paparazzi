@@ -18,7 +18,7 @@
  * You should have received a copy of the GNU General Public License
  * along with paparazzi; see the file COPYING.  If not, write to
  * the Free Software Foundation, 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA. 
+ * Boston, MA 02111-1307, USA.
  *
  *)
 
@@ -32,7 +32,7 @@ type ac_cam = {
 
 type rc_status = string
 type rc_mode = string
-type fbw = { mutable rc_status : rc_status; mutable rc_mode : rc_mode; mutable rc_rate : int }
+type fbw = { mutable rc_status : rc_status; mutable rc_mode : rc_mode; mutable rc_rate : int; mutable pprz_mode_msgs_since_last_fbw_status_msg : int; }
 val gps_nb_channels : int
 type svinfo = {
     svid : int;
@@ -104,6 +104,7 @@ type aircraft = {
     cam : ac_cam;
     mutable gps_mode : int;
     mutable gps_Pacc : int;
+    mutable state_filter_mode : int;
     fbw : fbw;
     svinfo : svinfo array;
     waypoints : (int, waypoint) Hashtbl.t;

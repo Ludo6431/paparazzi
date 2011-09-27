@@ -43,7 +43,7 @@ void mcu_arch_init(void) {
   return;
 #endif
 #ifdef HSE_TYPE_EXT_CLK
-#warning Using external clock
+#warning Info: Using external clock
   /* Setup the microcontroller system.
    *  Initialize the Embedded Flash Interface,
    *  initialize the PLL and update the SystemFrequency variable.
@@ -91,7 +91,7 @@ void mcu_arch_init(void) {
   RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB |
                          RCC_APB2Periph_GPIOC | RCC_APB2Periph_GPIOD |
                          RCC_APB2Periph_GPIOE | RCC_APB2Periph_AFIO, ENABLE);
-#endif  
+#endif
 
 
 }

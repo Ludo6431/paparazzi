@@ -177,7 +177,9 @@ end
 module GM = struct
   (** Fill the visible background with Google, OSM tiles *)
   let fill_tiles = fun geomap ->
-    TodoList.add (fun () -> MapGoogle.fill_window geomap)
+    match geomap#georef with
+      None -> ()
+    | Some _ -> TodoList.add (fun () -> MapGoogle.fill_window geomap)
 
   let auto = ref false
   let update = fun geomap ->
@@ -320,7 +322,7 @@ let keys_help = fun () ->
 
 
 (***************** MAIN ******************************************************)
-let ivy_bus = ref Defivybus.default_ivy_bus 
+let ivy_bus = ref Defivybus.default_ivy_bus
 and geo_ref = ref ""
 and map_files = ref []
 and center = ref ""
